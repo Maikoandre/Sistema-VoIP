@@ -26,11 +26,11 @@ class MakeCallView(APIView):
 
             action = SimpleAction(
                 'Originate',
-                Channel=f'SIP/{caller}',
-                Exten=callee,
-                Context='internal',
+                Channel=f'PJSIP/{callee}',
+                Exten=caller,
+                Context='from-internal',      
                 Priority=1,
-                CallerID=caller
+                CallerID=f'API Call <{callee}>'
             )
 
             client.send_action(action)

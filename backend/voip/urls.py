@@ -10,6 +10,6 @@ router.register(r'make-call', MakeCallView, basename='make-call')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api-auth/", include("rest_framework.urls")),
-    path('api/', include(router.urls)),
+    # path('api/', include(router.urls)),
     path('api/make-call/', MakeCallView.as_view(), name='make-call'),
 ]
