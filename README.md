@@ -15,7 +15,7 @@ Este projeto é uma plataforma de gestão de telefonia IP que integra o **Asteri
 * **`/asterisk`**: Contém os ficheiros de configuração do Asterisk (`sip.conf`, `extensions.conf`, `manager.conf`) e scripts AGI.
 * **`/backend`**: Core do sistema desenvolvido em Django, responsável pela API de gestão.
 * **`/backend/ramais`**: Aplicação Django que gere o modelo de dados de extensões/ramais.
-
+<!-- 
 ## 🛠️ Configuração do Sistema
 
 ### 1. Requisitos
@@ -41,4 +41,4 @@ Os ficheiros no diretório `/asterisk` devem ser integrados na configuração do
 
 * **Gestão de Ramais:** Cadastro de números e senhas na base de dados através da API.
 * **Integração AGI:** O script `call_handler.py` permite que o Asterisk realize consultas externas via HTTP durante uma chamada.
-* **Chamadas via API:** Endpoint que utiliza o protocolo AMI para conectar dois canais automaticamente.
+* **Chamadas via API:** Endpoint que utiliza o protocolo AMI para conectar dois canais automaticamente. -->
