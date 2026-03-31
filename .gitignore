@@ -1,10 +1,26 @@
-# Python-generated files
-__pycache__/
-*.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
+# Pasta de ambiente virtual (importante!)
+venv/
+env/
+.env
 
-# Virtual environments
-.venv
+# Arquivos temporários do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Banco de dados local (não suba o sqlite!)
+db.sqlite3
+
+# Pastas de mídia e estáticos do Django
+media/
+static_root/
+
+# Arquivos do VS Code e Sistema
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Configurações sensíveis do Asterisk
+*.pem
+*.crt
+keys/

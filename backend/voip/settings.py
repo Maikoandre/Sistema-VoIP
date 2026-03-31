@@ -117,3 +117,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Adicione isso para o Django encontrar sua pasta static na raiz do backend
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+# CONFIGURAÇÕES DO ASTERISK (AMI)
+ASTERISK_HOST = '127.0.0.1'
+ASTERISK_PORT = 5038  # Porta padrão do Manager do Asterisk
+ASTERISK_USER = 'admin' # O nome que estiver no manager.conf
+ASTERISK_PASS = 'amp111' # A senha que estiver no manager.conf

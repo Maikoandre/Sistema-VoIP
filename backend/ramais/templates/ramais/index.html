@@ -1,0 +1,81 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>VideoChamada VoIP - IF Baiano</title>
+    <style>
+        :root { --if-green: #2f9e41; --dark: #212529; --danger: #fa5252; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; margin: 0; color: white; overflow: hidden; }
+
+        /* Container Principal */
+        .video-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; align-items: center; justify-content: center; }
+
+        /* Vídeo Remoto (Quem você está vendo) */
+        #remoteVideo { width: 100%; height: 100%; object-fit: cover; background: #2c2e33; }
+
+        /* Vídeo Local (Sua câmera - estilo espelho) */
+        #localVideo { position: absolute; top: 20px; right: 20px; width: 240px; height: 140px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); object-fit: cover; background: #495057; z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transform: scaleX(-1); }
+
+        /* Barra de Controles Inferior */
+        .controls { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; background: rgba(0,0,0,0.6); padding: 15px 30px; border-radius: 50px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); z-index: 20; }
+
+        .btn-ctrl { width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; background: #495057; color: white; }
+        .btn-ctrl:hover { background: #5c636a; transform: scale(1.1); }
+        .btn-hangup { background: var(--danger); }
+        .btn-hangup:hover { background: #e03131; }
+        
+        /* Badge de Status */
+        .info-overlay { position: absolute; top: 20px; left: 20px; z-index: 10; }
+        .status-badge { background: var(--if-green); padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .room-name { font-size: 1.2rem; margin-top: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+
+        /* Placeholder quando não há vídeo */
+        .placeholder-text { position: absolute; color: #adb5bd; text-align: center; font-size: 1.1rem; z-index: 1; }
+    </style>
+</head>
+<body>
+
+<div class="video-container">
+    <div class="info-overlay">
+        <div class="status-badge">● Online</div>
+        <div class="room-name">Plataforma Linguística - Ramal 1006</div>
+    </div>
+
+    <div class="placeholder-text">Aguardando conexão...</div>
+
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+
+    <div class="controls">
+        <button class="btn-ctrl" title="Mutar Microfone">🎤</button>
+        <button class="btn-ctrl" title="Desligar Câmera">📷</button>
+        <button class="btn-ctrl btn-hangup" title="Encerrar Chamada" onclick="encerrar()">📞</button>
+    </div>
+</div>
+
+<script>
+    // Simulação de acesso à câmera para o TCC
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.getElementById('localVideo').srcObject = stream;
+            document.querySelector('.placeholder-text').style.display = 'none';
+        } catch (err) {
+            console.error("Erro ao acessar câmera: ", err);
+            alert("Por favor, permita o acesso à câmera para a videochamada!");
+        }
+    }
+
+    function encerrar() {
+        if(confirm("Deseja encerrar a chamada linguística?")) {
+            window.location.reload(); // Simula o reset
+        }
+    }
+
+    // Inicia a câmera assim que carregar a página
+    window.onload = startCamera;
+</script>
+
+</body>
+</html>

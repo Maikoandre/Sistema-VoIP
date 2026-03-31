@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from asterisk.ami import AMIClient, SimpleAction
 from .models import Extension
 from .serializers import ExtensionSerializer
+from django.shortcuts import render
 
 class ExtensionViewSet(viewsets.ModelViewSet):
     queryset = Extension.objects.all()
@@ -39,3 +40,10 @@ class MakeCallView(APIView):
             return Response({'message': f'Call from {caller} to {callee} initiated successfully.'})
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
+
+
+def index(request):
+    # Essa função apenas "renderiza" (mostra) o seu HTML
+    return render(request, 'ramais/index.html')

@@ -12,6 +12,15 @@ wheels = [
 ]
 
 [[package]]
+name = "asterisk-ami"
+version = "0.1.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/01/ae378a9b0ae4516bc2eee7332e2296a3574bb42feae5ccf2bd8cf7f1968c/asterisk-ami-0.1.7.tar.gz", hash = "sha256:de954116b7b03fb1b5420d9d83d847a3ba0d4cf1449847eada88b4bfde080136", size = 33440, upload-time = "2024-01-05T12:16:17.945Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/37/98/a29af5201e7a2c9c948debe134def3a636f73fb884710e6afb30771e487f/asterisk_ami-0.1.7-py3-none-any.whl", hash = "sha256:b94baabc1107214f3369a804fd1efda0649ba6afcb21095c6b438b6245fef7ff", size = 9745, upload-time = "2024-01-05T12:16:16.387Z" },
+]
+
+[[package]]
 name = "django"
 version = "6.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -42,12 +51,14 @@ name = "sistema-voip"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "asterisk-ami" },
     { name = "django" },
     { name = "djangorestframework" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "asterisk-ami", specifier = ">=0.1.7" },
     { name = "django", specifier = ">=6.0.3" },
     { name = "djangorestframework", specifier = ">=3.16.1" },
 ]
