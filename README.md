@@ -40,8 +40,8 @@ Antes de começar, instale:
 ## 1. Clonar o projeto
 
 ```bash
-git clone <seu-repo>
-cd <seu-repo>
+git clone https://github.com/Maikoandre/Sistema-VoIP.git
+cd https://github.com/Maikoandre/Sistema-VoIP.git
 ```
 
 ---
