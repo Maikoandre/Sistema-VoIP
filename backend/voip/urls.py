@@ -12,4 +12,5 @@ urlpatterns = [
     path("api-auth/", include("rest_framework.urls")),
     # path('api/', include(router.urls)),
     path('api/make-call/', MakeCallView.as_view(), name='make-call'),
+    path('', include('webphone.urls')),
 ]
