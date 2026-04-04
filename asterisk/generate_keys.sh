@@ -4,7 +4,7 @@ set -e
 
 echo " Carregando variáveis do .env..."
 set -a
-source '../.env'
+source './.env'
 set +a
 
 SOURCE_DIR="./"

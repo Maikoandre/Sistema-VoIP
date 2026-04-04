@@ -12,3 +12,6 @@ node_modules/
 
 *.crt
 *.key
+
+
+repomix-output.xml

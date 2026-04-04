@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-9!douo)na8fr(mud815q8+p2@f(atijuh%$y2do0i8ew5@5l=b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', "adena-readjustable-anaya.ngrok-free.dev/"]
 
 
 import os
