@@ -1,0 +1,865 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoIP — IF Baiano</title>
+    <script src="{% static '/voip.js' %}"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --green:      #1db954;
+            --green-dim:  #158a3c;
+            --red:        #e53e3e;
+            --red-dim:    #9b2c2c;
+            --blue:       #3b82f6;
+            --surface:    #1a1a2e;
+            --surface-2:  #16213e;
+            --surface-3:  #0f3460;
+            --glass:      rgba(255,255,255,0.06);
+            --glass-border: rgba(255,255,255,0.10);
+            --text:       #f0f4ff;
+            --text-muted: #8892a4;
+            --radius:     14px;
+            --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ─── LOGIN ─────────────────────────────────────────── */
+        #login-overlay {
+            position: fixed; inset: 0;
+            background: radial-gradient(ellipse at 60% 40%, #0f3460 0%, #1a1a2e 60%, #0a0a18 100%);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        #login-overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        .login-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px 40px;
+            width: 360px;
+            box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+        }
+        .login-logo {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 32px;
+        }
+        .login-logo-icon {
+            width: 38px; height: 38px;
+            background: var(--green);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+        }
+        .login-logo h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.3px; }
+        .login-logo span { font-size: 0.75rem; color: var(--text-muted); display: block; }
+
+        .field { margin-bottom: 18px; }
+        .field label { display: block; font-size: 0.75rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+        .field input {
+            width: 100%; padding: 13px 16px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'DM Mono', monospace;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color var(--transition);
+        }
+        .field input:focus { border-color: var(--green); }
+
+        #btn-entrar {
+            width: 100%; margin-top: 8px;
+            padding: 14px;
+            background: var(--green);
+            color: white; font-family: 'DM Sans', sans-serif;
+            font-size: 0.9rem; font-weight: 600; letter-spacing: 0.3px;
+            border: none; border-radius: 10px; cursor: pointer;
+            transition: background var(--transition), transform var(--transition);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        #btn-entrar:hover { background: var(--green-dim); transform: translateY(-1px); }
+        #btn-entrar:active { transform: translateY(0); }
+
+        /* ─── APP LAYOUT ──────────────────────────────────────── */
+        #app {
+            flex: 1; display: flex; flex-direction: column;
+            height: 100dvh;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease 0.1s, visibility 0.4s ease 0.1s;
+        }
+        #app.visible { opacity: 1; visibility: visible; }
+
+        /* ─── TOPBAR ──────────────────────────────────────────── */
+        #topbar {
+            position: absolute; top: 0; left: 0; right: 0;
+            padding: 16px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            z-index: 50;
+            background: linear-gradient(to bottom, rgba(10,10,24,0.8) 0%, transparent 100%);
+        }
+
+        .ext-badge {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            padding: 8px 14px;
+            border-radius: 100px;
+        }
+        .ext-badge .ext-number {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.85rem; font-weight: 500;
+            color: var(--text);
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #555; flex-shrink: 0;
+            transition: background 0.3s ease;
+            box-shadow: 0 0 0 0 transparent;
+        }
+        .status-dot.online  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .status-dot.calling { background: var(--blue);  box-shadow: 0 0 6px var(--blue); animation: pulse-dot 1.2s ease infinite; }
+        .status-dot.busy    { background: #f59e0b;      box-shadow: 0 0 6px #f59e0b; }
+        .status-dot.offline { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 4px var(--blue); transform: scale(1); }
+            50%       { box-shadow: 0 0 10px var(--blue); transform: scale(1.25); }
+        }
+        .status-label {
+            font-size: 0.72rem; font-weight: 500;
+            color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px;
+        }
+
+        .call-duration {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.85rem; color: var(--text-muted);
+            display: none;
+        }
+        .call-duration.visible { display: block; }
+
+        /* ─── VIDEO STAGE ─────────────────────────────────────── */
+        #stage {
+            flex: 1;
+            display: flex; align-items: center; justify-content: center;
+            background: #0a0a14;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Noise grain */
+        #stage::before {
+            content: '';
+            position: absolute; inset: 0; z-index: 1;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none; opacity: 0.4;
+        }
+
+        /* Remote video — contained, centered, Google Meet style */
+        #remote-wrap {
+            position: relative;
+            width: min(90vw, calc(100dvh * 16/9 - 160px));
+            aspect-ratio: 16/9;
+            border-radius: 20px;
+            overflow: hidden;
+            background: var(--surface-2);
+            box-shadow: 0 0 0 1px var(--glass-border), 0 24px 64px rgba(0,0,0,0.6);
+            z-index: 2;
+            transition: transform var(--transition);
+        }
+        #remoteVideo {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            display: block;
+            background: var(--surface-2);
+        }
+
+        /* Avatar placeholder quando sem vídeo */
+        #remote-avatar {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 16px;
+            background: radial-gradient(ellipse at 50% 40%, var(--surface-3) 0%, var(--surface-2) 100%);
+            opacity: 1; transition: opacity 0.3s;
+        }
+        #remote-avatar.hidden { opacity: 0; pointer-events: none; }
+        .avatar-circle {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: var(--surface-3);
+            border: 2px solid var(--glass-border);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted);
+        }
+        #remote-avatar p { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* Local video PiP */
+        #local-wrap {
+            position: absolute; bottom: 90px; right: 20px;
+            width: 200px; aspect-ratio: 16/9;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.12);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            z-index: 10;
+            background: #111;
+            transition: opacity var(--transition);
+        }
+        #localVideo {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            display: block;
+        }
+        #local-wrap.video-off { opacity: 0.3; }
+
+        /* ─── CALL OVERLAYS ───────────────────────────────────── */
+        .call-overlay {
+            position: absolute; inset: 0; z-index: 20;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 20px;
+            background: rgba(10,10,20,0.88);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .call-overlay.show { opacity: 1; visibility: visible; }
+
+        .spinner-ring {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.08);
+            border-top-color: var(--blue);
+            animation: spin 0.9s linear infinite;
+        }
+        .spinner-ring.green { border-top-color: var(--green); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .overlay-title {
+            font-size: 1.1rem; font-weight: 500; color: var(--text);
+            letter-spacing: -0.2px;
+        }
+        .overlay-sub { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Pulso de chamada recebida */
+        .pulse-ring {
+            position: relative;
+            width: 72px; height: 72px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .pulse-ring::before, .pulse-ring::after {
+            content: '';
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            border: 2px solid var(--green);
+            animation: pulse-expand 2s ease-out infinite;
+        }
+        .pulse-ring::after { animation-delay: 0.7s; }
+        @keyframes pulse-expand {
+            0%   { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(2);   opacity: 0; }
+        }
+        .pulse-ring-icon {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: var(--green);
+            display: flex; align-items: center; justify-content: center;
+            color: white; z-index: 1;
+        }
+
+        /* Chamada encerrada toast */
+        #toast {
+            position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+            background: rgba(30,30,50,0.95);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            padding: 12px 22px;
+            border-radius: 100px;
+            font-size: 0.82rem; color: var(--text-muted);
+            z-index: 100;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s, transform 0.3s ease;
+            transform: translateX(-50%) translateY(8px);
+            display: flex; align-items: center; gap: 8px;
+        }
+        #toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+
+        /* ─── INCOMING CALL MODAL ─────────────────────────────── */
+        #incoming-modal {
+            position: fixed; inset: 0; z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+        #incoming-modal.show { opacity: 1; visibility: visible; }
+
+        .incoming-card {
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 36px 32px;
+            text-align: center; width: 300px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+        }
+        .incoming-card h3 { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; }
+        #caller-id { font-family: 'DM Mono', monospace; font-size: 2rem; font-weight: 500; color: var(--text); margin-bottom: 28px; }
+        .incoming-actions { display: flex; gap: 12px; justify-content: center; }
+        .btn-accept, .btn-reject {
+            width: 60px; height: 60px; border-radius: 50%;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: white; transition: transform var(--transition), filter var(--transition);
+        }
+        .btn-accept { background: var(--green); }
+        .btn-reject { background: var(--red); }
+        .btn-accept:hover, .btn-reject:hover { transform: scale(1.08); filter: brightness(1.1); }
+
+        /* ─── DIAL MODAL ──────────────────────────────────────── */
+        #dial-modal {
+            position: fixed; inset: 0; z-index: 2000;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+        #dial-modal.show { opacity: 1; visibility: visible; }
+        .dial-card {
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px; padding: 32px 28px;
+            width: 300px;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+        }
+        .dial-card h3 { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 16px; }
+        .dial-input-wrap { position: relative; margin-bottom: 16px; }
+        .dial-input-wrap input {
+            width: 100%; padding: 13px 16px;
+            background: rgba(255,255,255,0.07);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px; color: var(--text);
+            font-family: 'DM Mono', monospace; font-size: 1.4rem;
+            outline: none; text-align: center;
+            transition: border-color var(--transition);
+        }
+        .dial-input-wrap input:focus { border-color: var(--blue); }
+        .dial-actions { display: flex; gap: 10px; }
+        .dial-actions button {
+            flex: 1; padding: 13px;
+            border: none; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: filter var(--transition), transform var(--transition);
+        }
+        .dial-actions button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        #btn-dial-cancel { background: rgba(255,255,255,0.08); color: var(--text); }
+        #btn-dial-call   { background: var(--green); color: white; }
+
+        /* ─── CONTROLS BAR ────────────────────────────────────── */
+        #controls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 16px 20px 20px;
+            display: flex; align-items: center; justify-content: center; gap: 12px;
+            z-index: 30;
+            background: linear-gradient(to top, rgba(10,10,24,0.9) 0%, transparent 100%);
+        }
+
+        .ctrl-btn {
+            width: 52px; height: 52px; border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            color: var(--text);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background var(--transition), border-color var(--transition), transform var(--transition);
+            flex-shrink: 0;
+        }
+        .ctrl-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+        .ctrl-btn:active { transform: translateY(0) scale(0.95); }
+        .ctrl-btn.active { background: rgba(239,68,68,0.25); border-color: rgba(239,68,68,0.4); color: var(--red); }
+
+        #btn-call-start {
+            width: 56px; height: 56px;
+            background: var(--green); border-color: transparent;
+            color: white;
+        }
+        #btn-call-start:hover { background: var(--green-dim); }
+
+        #btn-hangup {
+            width: 56px; height: 56px;
+            background: var(--red); border-color: transparent;
+            color: white; display: none;
+        }
+        #btn-hangup:hover { background: var(--red-dim); }
+
+        /* Tooltip */
+        .ctrl-btn { position: relative; }
+        .ctrl-btn::after {
+            content: attr(data-tip);
+            position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+            background: rgba(20,20,35,0.95); color: var(--text-muted);
+            font-size: 0.7rem; white-space: nowrap;
+            padding: 4px 10px; border-radius: 100px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .ctrl-btn:hover::after { opacity: 1; }
+
+        /* Responsive PiP for small screens */
+        @media (max-width: 600px) {
+            #local-wrap { width: 120px; bottom: 80px; right: 12px; }
+            #remote-wrap { width: 98vw; }
+            .login-card { width: 90vw; padding: 36px 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══════════════════════════════════════════════════ -->
+<div id="login-overlay">
+    <div class="login-card">
+        <div class="login-logo">
+            <div class="login-logo-icon">
+                <i data-lucide="phone" style="width:18px;height:18px;stroke-width:2.5"></i>
+            </div>
+            <div>
+                <h1>VoIP Premium</h1>
+                <span>IF Baiano</span>
+            </div>
+        </div>
+        <div class="field"><label>Ramal</label><input type="text" id="user-ext" value="1001" autocomplete="off"></div>
+        <div class="field"><label>Senha</label><input type="password" id="user-pass" value="1234"></div>
+        <button id="btn-entrar">
+            <i data-lucide="log-in" style="width:16px;height:16px;stroke-width:2.5"></i>
+            Entrar
+        </button>
+    </div>
+</div>
+
+<!-- ═══ INCOMING CALL ════════════════════════════════════════════ -->
+<div id="incoming-modal">
+    <div class="incoming-card">
+        <div class="pulse-ring" style="margin: 0 auto 20px;">
+            <div class="pulse-ring-icon">
+                <i data-lucide="phone-incoming" style="width:22px;height:22px;stroke-width:2"></i>
+            </div>
+        </div>
+        <h3>Chamada recebida</h3>
+        <div id="caller-id">---</div>
+        <div class="incoming-actions">
+            <button class="btn-reject" id="btn-reject" data-tip="Recusar">
+                <i data-lucide="phone-off" style="width:22px;height:22px;stroke-width:2"></i>
+            </button>
+            <button class="btn-accept" id="btn-accept" data-tip="Atender">
+                <i data-lucide="phone" style="width:22px;height:22px;stroke-width:2.5"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ DIAL MODAL ═══════════════════════════════════════════════ -->
+<div id="dial-modal">
+    <div class="dial-card">
+        <h3>Discar ramal</h3>
+        <div class="dial-input-wrap">
+            <input type="tel" id="dial-input" placeholder="1002" maxlength="6" autocomplete="off">
+        </div>
+        <div class="dial-actions">
+            <button id="btn-dial-cancel">Cancelar</button>
+            <button id="btn-dial-call">
+                <i data-lucide="phone" style="width:14px;height:14px;stroke-width:2.5;vertical-align:-2px;margin-right:5px;"></i>Ligar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ APP ══════════════════════════════════════════════════════ -->
+<div id="app">
+
+    <!-- Topbar -->
+    <div id="topbar">
+        <div class="ext-badge">
+            <div class="status-dot" id="status-dot"></div>
+            <span class="ext-number" id="ext-display">---</span>
+            <span class="status-label" id="status-label">Offline</span>
+        </div>
+        <div class="call-duration" id="call-duration"></div>
+        <div style="width:120px"></div><!-- spacer para centralizar duração -->
+    </div>
+
+    <!-- Vídeo principal -->
+    <div id="stage">
+        <div id="remote-wrap">
+            <video id="remoteVideo" autoplay playsinline></video>
+
+            <!-- Avatar quando sem vídeo remoto -->
+            <div id="remote-avatar">
+                <div class="avatar-circle">
+                    <i data-lucide="user" style="width:36px;height:36px;stroke-width:1.5;color:#4a5568"></i>
+                </div>
+                <p id="avatar-label">Aguardando conexão…</p>
+            </div>
+
+            <!-- Overlay: Ligando -->
+            <div class="call-overlay" id="overlay-calling">
+                <div class="spinner-ring"></div>
+                <div class="overlay-title">Ligando…</div>
+                <div class="overlay-sub" id="overlay-dest"></div>
+            </div>
+
+            <!-- Overlay: Conectando (callee aceitou, aguardando mídia) -->
+            <div class="call-overlay" id="overlay-connecting">
+                <div class="spinner-ring green"></div>
+                <div class="overlay-title">Conectando…</div>
+                <div class="overlay-sub">Estabelecendo canal de mídia</div>
+            </div>
+        </div>
+
+        <!-- PiP local -->
+        <div id="local-wrap">
+            <video id="localVideo" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Barra de controles -->
+        <div id="controls">
+            <button class="ctrl-btn" id="btn-mute"  data-tip="Silenciar microfone">
+                <i data-lucide="mic" style="width:20px;height:20px;stroke-width:2"></i>
+            </button>
+            <button class="ctrl-btn" id="btn-video-toggle" data-tip="Câmera">
+                <i data-lucide="video" style="width:20px;height:20px;stroke-width:2"></i>
+            </button>
+            <button class="ctrl-btn" id="btn-call-start" data-tip="Nova chamada">
+                <i data-lucide="phone" style="width:22px;height:22px;stroke-width:2.5"></i>
+            </button>
+            <button class="ctrl-btn" id="btn-hangup" data-tip="Encerrar chamada">
+                <i data-lucide="phone-off" style="width:22px;height:22px;stroke-width:2.5"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast">
+    <i data-lucide="phone-off" style="width:14px;height:14px"></i>
+    <span id="toast-msg">Chamada encerrada</span>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   CONFIGURAÇÃO
+══════════════════════════════════════════════════════════════ */
+const DOMAIN   = "{{ SERVER_HOST }}";
+const WSS_PORT = '8089';
+
+/* ═══════════════════════════════════════════════════════════════
+   ESTADO
+══════════════════════════════════════════════════════════════ */
+let ua, session, localStream;
+let isMuted = false, isVideoOff = false;
+let callTimerInterval = null, callSeconds = 0;
+let currentExt = '';
+
+/* ═══════════════════════════════════════════════════════════════
+   ELEMENTOS
+══════════════════════════════════════════════════════════════ */
+const remoteVideo     = document.getElementById('remoteVideo');
+const localVideo      = document.getElementById('localVideo');
+const statusDot       = document.getElementById('status-dot');
+const statusLabel     = document.getElementById('status-label');
+const extDisplay      = document.getElementById('ext-display');
+const callDuration    = document.getElementById('call-duration');
+const remoteAvatar    = document.getElementById('remote-avatar');
+const avatarLabel     = document.getElementById('avatar-label');
+const overlayCalling  = document.getElementById('overlay-calling');
+const overlayConnect  = document.getElementById('overlay-connecting');
+const overlayDest     = document.getElementById('overlay-dest');
+const localWrap       = document.getElementById('local-wrap');
+
+/* ═══════════════════════════════════════════════════════════════
+   OPÇÕES DE CHAMADA
+══════════════════════════════════════════════════════════════ */
+const getCallOptions = () => ({
+    mediaStream: localStream,
+    pcConfig: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    },
+    rtcOfferConstraints:  { offerToReceiveAudio: true, offerToReceiveVideo: true },
+    rtcAnswerConstraints: { offerToReceiveAudio: true, offerToReceiveVideo: true }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   STATUS UI
+══════════════════════════════════════════════════════════════ */
+function setStatus(state, label) {
+    statusDot.className = 'status-dot ' + state;
+    statusLabel.textContent = label;
+}
+
+function showToast(msg, icon = 'phone-off') {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.querySelector('i').setAttribute('data-lucide', icon);
+    lucide.createIcons();
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TIMER
+══════════════════════════════════════════════════════════════ */
+function startTimer() {
+    callSeconds = 0;
+    callDuration.classList.add('visible');
+    callTimerInterval = setInterval(() => {
+        callSeconds++;
+        const m = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+        const s = String(callSeconds % 60).padStart(2, '0');
+        callDuration.textContent = `${m}:${s}`;
+    }, 1000);
+}
+function stopTimer() {
+    clearInterval(callTimerInterval);
+    callDuration.classList.remove('visible');
+    callDuration.textContent = '';
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TOGGLE UI
+══════════════════════════════════════════════════════════════ */
+function toggleUI(state) {
+    // state: 'idle' | 'calling' | 'connected'
+    const btnCall   = document.getElementById('btn-call-start');
+    const btnHangup = document.getElementById('btn-hangup');
+
+    overlayCalling.classList.toggle('show', state === 'calling');
+    overlayConnect.classList.toggle('show', state === 'connecting');
+
+    if (state === 'idle') {
+        btnCall.style.display   = 'flex';
+        btnHangup.style.display = 'none';
+        remoteAvatar.classList.remove('hidden');
+        avatarLabel.textContent = 'Aguardando conexão…';
+        stopTimer();
+        setStatus('online', 'Online');
+    } else if (state === 'calling') {
+        btnCall.style.display   = 'none';
+        btnHangup.style.display = 'flex';
+        setStatus('calling', 'Chamando');
+    } else if (state === 'connecting') {
+        btnCall.style.display   = 'none';
+        btnHangup.style.display = 'flex';
+        setStatus('calling', 'Conectando');
+    } else if (state === 'connected') {
+        btnCall.style.display   = 'none';
+        btnHangup.style.display = 'flex';
+        overlayCalling.classList.remove('show');
+        overlayConnect.classList.remove('show');
+        setStatus('busy', 'Em chamada');
+        startTimer();
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-entrar').onclick = async () => {
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: true
+        });
+        localVideo.srcObject = localStream;
+        currentExt = document.getElementById('user-ext').value;
+        extDisplay.textContent = 'Ramal ' + currentExt;
+
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('app').classList.add('visible');
+
+        startSIP(currentExt, document.getElementById('user-pass').value);
+    } catch (e) {
+        alert('Erro ao acessar câmera/microfone: ' + e.message);
+    }
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SIP
+══════════════════════════════════════════════════════════════ */
+function startSIP(ext, pass) {
+    setStatus('offline', 'Conectando…');
+    const socket = new JsSIP.WebSocketInterface(`wss://${DOMAIN}:${WSS_PORT}/ws`);
+    ua = new JsSIP.UA({
+        sockets:  [socket],
+        uri:      `sip:${ext}@${DOMAIN}`,
+        password: pass,
+        register: true
+    });
+
+    ua.on('registered',     () => setStatus('online', 'Online'));
+    ua.on('unregistered',   () => setStatus('offline', 'Offline'));
+    ua.on('registrationFailed', () => setStatus('offline', 'Falha no registro'));
+
+    ua.on('newRTCSession', ({ session: s }) => {
+        session = s;
+
+        const remoteStream = new MediaStream();
+        remoteVideo.srcObject = remoteStream;
+
+        // Setup do PeerConnection — robusto contra race condition
+        const setupPC = (pc) => {
+            pc.addEventListener('track', (event) => {
+                console.log('[WebRTC] Track recebida:', event.track.kind);
+                if (!remoteStream.getTracks().includes(event.track)) {
+                    remoteStream.addTrack(event.track);
+                }
+                // Esconde avatar quando vídeo chegar
+                if (event.track.kind === 'video') {
+                    event.track.onunmute = () => remoteAvatar.classList.add('hidden');
+                }
+                clearTimeout(window.playTimeout);
+                window.playTimeout = setTimeout(() => {
+                    remoteVideo.play().catch(err => console.warn('[WebRTC] Autoplay:', err));
+                }, 300);
+            });
+        };
+
+        if (s.connection) {
+            setupPC(s.connection);
+        } else {
+            s.on('peerconnection', (e) => setupPC(e.peerconnection));
+        }
+
+        // ── Chamada recebida ───────────────────────────────────
+        if (s.direction === 'incoming') {
+            document.getElementById('caller-id').textContent = s.remote_identity.uri.user;
+            document.getElementById('incoming-modal').classList.add('show');
+
+            document.getElementById('btn-accept').onclick = () => {
+                document.getElementById('incoming-modal').classList.remove('show');
+                s.answer(getCallOptions());
+                toggleUI('connecting');
+            };
+            document.getElementById('btn-reject').onclick = () => {
+                document.getElementById('incoming-modal').classList.remove('show');
+                s.terminate();
+            };
+        }
+
+        // ── Chamada aceita (ambos os lados) ────────────────────
+        s.on('accepted', () => toggleUI('connected'));
+
+        // ── Encerrada ──────────────────────────────────────────
+        s.on('ended', (e) => {
+            toggleUI('idle');
+            remoteVideo.srcObject = null;
+            remoteAvatar.classList.remove('hidden');
+            const reason = e?.cause || 'encerrada';
+            showToast('Chamada encerrada · ' + reason);
+        });
+
+        // ── Falha ──────────────────────────────────────────────
+        s.on('failed', (e) => {
+            toggleUI('idle');
+            remoteAvatar.classList.remove('hidden');
+            const reason = e?.cause || 'falha';
+            showToast('Chamada falhou · ' + reason, 'alert-circle');
+        });
+
+        if (s.direction === 'outgoing') toggleUI('calling');
+    });
+
+    ua.start();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DISCAGEM
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-call-start').onclick = () => {
+    const modal = document.getElementById('dial-modal');
+    modal.classList.add('show');
+    document.getElementById('dial-input').value = '';
+    setTimeout(() => document.getElementById('dial-input').focus(), 50);
+};
+
+document.getElementById('btn-dial-cancel').onclick = () => {
+    document.getElementById('dial-modal').classList.remove('show');
+};
+
+document.getElementById('btn-dial-call').onclick = makecall;
+
+document.getElementById('dial-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') makecall();
+    if (e.key === 'Escape') document.getElementById('dial-modal').classList.remove('show');
+});
+
+function makecall() {
+    const dest = document.getElementById('dial-input').value.trim();
+    if (!dest) return;
+    document.getElementById('dial-modal').classList.remove('show');
+    overlayDest.textContent = 'Ramal ' + dest;
+    avatarLabel.textContent = 'Ramal ' + dest;
+    ua.call(`sip:${dest}@${DOMAIN}`, getCallOptions());
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTROLES
+══════════════════════════════════════════════════════════════ */
+document.getElementById('btn-hangup').onclick = () => session?.terminate();
+
+document.getElementById('btn-mute').onclick = function () {
+    if (!localStream) return;
+    isMuted = !isMuted;
+
+    localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+    session?.connection?.getSenders().forEach(s => {
+        if (s.track?.kind === 'audio') s.track.enabled = !isMuted;
+    });
+
+    this.classList.toggle('active', isMuted);
+    this.querySelector('i').setAttribute('data-lucide', isMuted ? 'mic-off' : 'mic');
+    this.setAttribute('data-tip', isMuted ? 'Ativar microfone' : 'Silenciar microfone');
+    lucide.createIcons();
+};
+
+document.getElementById('btn-video-toggle').onclick = function () {
+    if (!localStream) return;
+    isVideoOff = !isVideoOff;
+
+    localStream.getVideoTracks().forEach(t => t.enabled = !isVideoOff);
+    session?.connection?.getSenders().forEach(s => {
+        if (s.track?.kind === 'video') s.track.enabled = !isVideoOff;
+    });
+
+    this.classList.toggle('active', isVideoOff);
+    this.querySelector('i').setAttribute('data-lucide', isVideoOff ? 'video-off' : 'video');
+    this.setAttribute('data-tip', isVideoOff ? 'Ativar câmera' : 'Desativar câmera');
+    localWrap.classList.toggle('video-off', isVideoOff);
+    lucide.createIcons();
+};
+
+
+lucide.createIcons();
+</script>
+</body>
+</html>

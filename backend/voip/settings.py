@@ -25,7 +25,15 @@ SECRET_KEY = 'django-insecure-9!douo)na8fr(mud815q8+p2@f(atijuh%$y2do0i8ew5@5l=b
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SERVER_HOST = os.getenv("SERVER_HOST")
 
 
 # Application definition
@@ -38,7 +46,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'ramais',
+    'webphone',
     'rest_framework',
+    'sslserver',
+    'django_extensions'
 ]
 
 MIDDLEWARE = [
@@ -117,3 +128,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
